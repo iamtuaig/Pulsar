@@ -11,6 +11,7 @@ set -ouex pipefail
 
 # this installs a package from fedora repos
 dnf5 install -y tmux 
+dnf5 install -y kitty fastfetch fish neovim rsms-inter-fonts solaar
 
 # Use a COPR Example:
 #
@@ -18,6 +19,11 @@ dnf5 install -y tmux
 # dnf5 -y install package
 # Disable COPRs so they don't end up enabled on the final image:
 # dnf5 -y copr disable ublue-os/staging
+
+# Install Cosmic Desktop
+dnf5 -y copr enable ryanabx/cosmic-epoch
+dnf5 -y install cosmic-desktop
+dnf5 -y copr disable ryanabx/cosmic-epoch
 
 #### Example for enabling a System Unit File
 
