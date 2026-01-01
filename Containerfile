@@ -3,7 +3,10 @@ FROM scratch AS ctx
 COPY build_files /
 
 # Base Image
-FROM ghcr.io/ublue-os/base-main:latest
+FROM ghcr.io/ublue-os/bluefin-common:latest AS bluefin-common
+
+# Copy all system files
+COPY --from=bluefin-common /system_files /
 
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:latest
