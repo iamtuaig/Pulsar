@@ -1,0 +1,165 @@
+From 9190198bb492ed8f2f3313af98f947473fca694a Mon Sep 17 00:00:00 2001
+From: iamtuaig <sbwllrd@icloud.com>
+Date: Sat, 3 Jan 2026 16:10:04 -0500
+Subject: [PATCH] Add patch files
+
+---
+ build_files/base/04-packages.sh            |  4 +
+ patches/0002-reinstall-ublue-os-just.diff  | 97 ++--------------------
+ patches/0003-explicit-flatpak-install.diff | 17 ++++
+ 3 files changed, 30 insertions(+), 88 deletions(-)
+ create mode 100644 patches/0003-explicit-flatpak-install.diff
+
+diff --git a/build_files/base/04-packages.sh b/build_files/base/04-packages.sh
+index c9e2da8..64f68ce 100755
+--- a/build_files/base/04-packages.sh
++++ b/build_files/base/04-packages.sh
+@@ -31,6 +31,9 @@ FEDORA_PACKAGES=(
+     fastfetch
+     firewall-config
+     fish
++    flattpak
++    flatpak-libs
++    flatpak-session-helper
+     foo2zjs
+     fuse-encfs
+     gcc
+@@ -132,6 +135,7 @@ copr_install_isolated "ublue-os/packages" \
+     "ublue-bling" \
+     "ublue-brew" \
+     "ublue-fastfetch" \
++    "ublue-os-just" \
+     "ublue-motd" \
+     "ublue-polkit-rules" \
+     "ublue-setup-services" \
+diff --git a/patches/0002-reinstall-ublue-os-just.diff b/patches/0002-reinstall-ublue-os-just.diff
+index 534287a..8f10aed 100644
+--- a/patches/0002-reinstall-ublue-os-just.diff
++++ b/patches/0002-reinstall-ublue-os-just.diff
+@@ -1,90 +1,11 @@
+-diff --git a/build_files/build.sh b/build_files/build.sh
+---- a/build_files/build.sh
+-+++ b/build_files/build.sh
+-@@ -1,6 +1,6 @@
+- #!/bin/bash
+- 
+- set -ouex pipefail
+-@@
+- # Generate image-info.json
+- /ctx/build_files/base/00-image-info.sh
+- 
+--# Install Kernel and Akmods
+--/ctx/build_files/base/03-install-kernel-akmods.sh
+--
+- # Install Additional Packages
+- /ctx/build_files/base/04-packages.sh
+- 
+-diff --git a/build_files/base/00-image-info.sh b/build_files/base/00-image-info.sh
+---- a/build_files/base/00-image-info.sh
+-+++ b/build_files/base/00-image-info.sh
+-@@ -1,20 +1,22 @@
+- #!/usr/bin/env bash
+- 
+- echo "::group:: ===$(basename "$0")==="
+- 
+- set -xeuo pipefail
+- 
+- IMAGE_PRETTY_NAME="Pulsar"
+- IMAGE_LIKE="fedora"
+- HOME_URL="https://github.com/iamtuaig"
+- DOCUMENTATION_URL="https://github.com/iamtuaig/Documentation.git"
+- SUPPORT_URL="https://github.com/iamtuaig/Pulsar/issues"
+- BUG_SUPPORT_URL="https://github.com/iamtuaig/Pulsar/issues"
+- CODE_NAME="Cosmic"
+- VERSION="${VERSION:-00.00000000}"
+- 
+- IMAGE_INFO="/usr/share/ublue-os/image-info.json"
+--IMAGE_REF="ostree-unverified-registry:ghcr.io/iamtuaig/pulsar:latest"
+-+IMAGE_REF_TAG="${UBLUE_IMAGE_TAG:-latest}"
+-+IMAGE_REF="ostree-unverified-registry:ghcr.io/iamtuaig/pulsar:${IMAGE_REF_TAG}"
+-@@ -1,6 +1,10 @@
+- # Fix issues caused by ID no longer being fedora
+--sed -i "s|^EFIDIR=.*|EFIDIR=\"fedora\"|" /usr/sbin/grub2-switch-to-blscfg
+-+if [[ -f /usr/sbin/grub2-switch-to-blscfg ]]; then
+-+  sed -i "s|^EFIDIR=.*|EFIDIR=\"fedora\"|" /usr/sbin/grub2-switch-to-blscfg
+-+fi
+- 
+- echo "::endgroup::"
+- 
+-diff --git a/build_files/base/04-packages.sh b/build_files/base/04-packages.sh
+ --- a/build_files/base/04-packages.sh
+ +++ b/build_files/base/04-packages.sh
+-@@ -1,6 +1,7 @@
+- FEDORA_PACKAGES=(
+-+    starship
+- )
+- 
+-diff --git a/build_files/base/06-override-install.sh b/build_files/base/06-override-install.sh
+---- a/build_files/base/06-override-install.sh
+-+++ b/build_files/base/06-override-install.sh
+-@@ -1,6 +1,6 @@
+- rm -rf /usr/src
+- rm -rf /usr/share/doc
+--# Remove kernel-devel from rpmdb because all package files are removed from /usr/src
+--rpm --erase --nodeps kernel-devel
+--
+--# Starship Shell Prompt
+--ghcurl "https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-gnu.tar.gz" --retry 3 -o /tmp/starship.tar.gz
+--tar -xzf /tmp/starship.tar.gz -C /tmp
+--install -c -m 0755 /tmp/starship /usr/bin
+--echo 'eval "$(starship init bash)"' >>/etc/bashrc
+-+if rpm -q kernel-devel >/dev/null 2>&1; then
+-+  rpm --erase --nodeps kernel-devel
+-+fi
+- 
+-diff --git a/system_files/etc/profile.d/00-starship.sh b/system_files/etc/profile.d/00-starship.sh
+-new file mode 100644
+---- /dev/null
+-+++ b/system_files/etc/profile.d/00-starship.sh
+-@@ -0,0 +1,10 @@
+-+# Enable starship for interactive shells.
+-+# (Installed from Fedora repos for reproducible builds.)
+-+
+-+case "$-" in
+-+  *i*)
+-+    if command -v starship >/dev/null 2>&1; then
+-+      eval "$(starship init bash)"
+-+    fi
+-+    ;;
+-+esac
++@@ -120,6 +120,7 @@ copr_install_isolated "ublue-os/packages" \
++     "ublue-bling" \
++     "ublue-brew" \
++     "ublue-fastfetch" \
+++    "ublue-os-just" \
++     "ublue-motd" \
++     "ublue-polkit-rules" \
++     "ublue-setup-services" \
++     "uupd"
+\ No newline at end of file
+diff --git a/patches/0003-explicit-flatpak-install.diff b/patches/0003-explicit-flatpak-install.diff
+new file mode 100644
+index 0000000..8cf4360
+--- /dev/null
++++ b/patches/0003-explicit-flatpak-install.diff
+@@ -0,0 +1,17 @@
++From d32d260a06860bb1c5b1af0579e6f4009320f98a Mon Sep 17 00:00:00 2001
++From: iamtuaig <sbwllrd@icloud.com>
++Date: Sat, 3 Jan 2026 16:05:42 -0500
++Subject: [PATCH] Explicitly install Flatpak packages
++
++---
++ patch.diff => patches/0002-reinstall-ublue-os-just.diff | 0
++ 1 file changed, 0 insertions(+), 0 deletions(-)
++ rename patch.diff => patches/0002-reinstall-ublue-os-just.diff (100%)
++
++diff --git a/patch.diff b/patches/0002-reinstall-ublue-os-just.diff
++similarity index 100%
++rename from patch.diff
++rename to patches/0002-reinstall-ublue-os-just.diff
++-- 
++2.50.1 (Apple Git-155)
++
+-- 
+2.50.1 (Apple Git-155)
+

@@ -1,0 +1,37 @@
+From bbb4f52b54901a4153588dff245baf6960904686 Mon Sep 17 00:00:00 2001
+From: iamtuaig <sbwllrd@icloud.com>
+Date: Sat, 3 Jan 2026 16:32:46 -0500
+Subject: [PATCH] Harden copr-helpers
+
+---
+ build_files/shared/copr-helpers.sh | 4 +++-
+ patches/0001-Dummy.diff            | 0
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+ create mode 100644 patches/0001-Dummy.diff
+
+diff --git a/build_files/shared/copr-helpers.sh b/build_files/shared/copr-helpers.sh
+index 30bd04c..c14827f 100755
+--- a/build_files/shared/copr-helpers.sh
++++ b/build_files/shared/copr-helpers.sh
+@@ -1,4 +1,6 @@
+ #!/usr/bin/bash
++# COPR installs are intentionally isolated:
++# enable → install specific pkgs → disable
+ set -euo pipefail
+ 
+ copr_install_isolated() {
+@@ -17,7 +19,7 @@ copr_install_isolated() {
+ 
+     dnf5 -y copr enable "$copr_name"
+     dnf5 -y copr disable "$copr_name"
+-    dnf5 -y install --enablerepo="$repo_id" "${packages[@]}"
++    dnf5 -y install --enablerepo="$repo_id" --setopt=install_weak_deps=False "${packages[@]}"
+ 
+     echo "Installed ${packages[*]} from $copr_name"
+ }
+diff --git a/patches/0001-Dummy.diff b/patches/0001-Dummy.diff
+new file mode 100644
+index 0000000..e69de29
+-- 
+2.50.1 (Apple Git-155)
+
