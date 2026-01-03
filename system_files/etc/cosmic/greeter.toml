@@ -1,6 +1,0 @@
-[branding]
-logo = "/usr/share/pixmaps/pulsar.png"
-
-[appearance]
-accent_color = "#8b5cf6"   # cosmic violet / gravitational purple
-background = "/usr/share/backgrounds/pulsar/runaway-black-hole.jpg"
