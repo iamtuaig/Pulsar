@@ -305,6 +305,11 @@ lint:
     fi
     # Run shellcheck on all Bash scripts
     /usr/bin/find . -iname "*.sh" -type f -exec shellcheck "{}" ';'
+    
+# Run local sanity checks on build scripts
+check:
+	echo "==> Checking build scripts"
+	./scripts/check-build-scripts.sh
 
 # Runs shfmt on all Bash scripts
 format:
