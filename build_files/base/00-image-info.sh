@@ -1,65 +1,114 @@
 #!/usr/bin/env bash
-
 echo "::group:: ===$(basename "$0")==="
 
 set -xeuo pipefail
 
+# ------------------------------------------------------------
+# Pulsar identity
+# ------------------------------------------------------------
 IMAGE_PRETTY_NAME="Pulsar"
 IMAGE_LIKE="fedora"
 HOME_URL="https://github.com/iamtuaig"
-DOCUMENTATION_URL="https://github.com/iamtuaig/Documentation.git"
+DOCUMENTATION_URL="https://github.com/iamtuaig/Pulsar#readme"
 SUPPORT_URL="https://github.com/iamtuaig/Pulsar/issues"
 BUG_SUPPORT_URL="https://github.com/iamtuaig/Pulsar/issues"
 CODE_NAME="Cosmic"
+
+# Template provides VERSION (or fallback)
 VERSION="${VERSION:-00.00000000}"
 
 IMAGE_INFO="/usr/share/ublue-os/image-info.json"
-IMAGE_REF="ostree-unverified-registry:ghcr.io/iamtuaig/pulsar:latest"
 
-# Image Flavor
+# Prefer the actual build tag (e.g. v0.1.0) when set; else "latest"
+IMAGE_REF_TAG="${UBLUE_IMAGE_TAG:-latest}"
+IMAGE_REF="ostree-unverified-registry:ghcr.io/iamtuaig/pulsar:${IMAGE_REF_TAG}"
+
+# Image Flavor detection (keep for future expansion)
 image_flavor="main"
-if [[ "${IMAGE_NAME}" =~ nvidia-open ]]; then
+if [[ "${IMAGE_NAME:-}" =~ nvidia-open ]]; then
   image_flavor="nvidia-open"
 fi
 
-cat >$IMAGE_INFO <<EOF
+# ------------------------------------------------------------
+# image-info.json (ublue tooling)
+# ------------------------------------------------------------
+cat > "${IMAGE_INFO}" <<EOF
 {
-  "image-name": "$IMAGE_NAME",
-  "image-flavor": "$image_flavor",
-  "image-vendor": "$IMAGE_VENDOR",
-  "image-ref": "$IMAGE_REF",
-  "image-tag":"$UBLUE_IMAGE_TAG",
-  "base-image-name": "$BASE_IMAGE_NAME",
-  "fedora-version": "$FEDORA_MAJOR_VERSION"
+  "image-name": "${IMAGE_NAME:-pulsar}",
+  "image-flavor": "${image_flavor}",
+  "image-vendor": "${IMAGE_VENDOR:-iamtuaig}",
+  "image-ref": "${IMAGE_REF}",
+  "image-tag": "${UBLUE_IMAGE_TAG:-}",
+  "base-image-name": "${BASE_IMAGE_NAME:-cosmic-atomic}",
+  "fedora-version": "${FEDORA_MAJOR_VERSION:-43}"
 }
 EOF
 
-# OS Release File
-sed -i "s|^VARIANT_ID=.*|VARIANT_ID=$IMAGE_NAME|" /usr/lib/os-release
-sed -i "s|^PRETTY_NAME=.*|PRETTY_NAME=\"${IMAGE_PRETTY_NAME} (Version: ${VERSION})\"|" /usr/lib/os-release
-sed -i "s|^NAME=.*|NAME=\"$IMAGE_PRETTY_NAME\"|" /usr/lib/os-release
-sed -i "s|^HOME_URL=.*|HOME_URL=\"$HOME_URL\"|" /usr/lib/os-release
-sed -i "s|^DOCUMENTATION_URL=.*|DOCUMENTATION_URL=\"$DOCUMENTATION_URL\"|" /usr/lib/os-release
-sed -i "s|^SUPPORT_URL=.*|SUPPORT_URL=\"$SUPPORT_URL\"|" /usr/lib/os-release
-sed -i "s|^BUG_REPORT_URL=.*|BUG_REPORT_URL=\"$BUG_SUPPORT_URL\"|" /usr/lib/os-release
-sed -i "s|^CPE_NAME=\"cpe:/o:fedoraproject:fedora|CPE_NAME=\"cpe:/o:universal-blue:${IMAGE_PRETTY_NAME,}|" /usr/lib/os-release
-sed -i "s|^DEFAULT_HOSTNAME=.*|DEFAULT_HOSTNAME=\"${IMAGE_PRETTY_NAME,}\"|" /usr/lib/os-release
-sed -i "s|^ID=fedora|ID=${IMAGE_PRETTY_NAME,}\nID_LIKE=\"${IMAGE_LIKE}\"|" /usr/lib/os-release
-sed -i "/^REDHAT_BUGZILLA_PRODUCT=/d; /^REDHAT_BUGZILLA_PRODUCT_VERSION=/d; /^REDHAT_SUPPORT_PRODUCT=/d; /^REDHAT_SUPPORT_PRODUCT_VERSION=/d" /usr/lib/os-release
-sed -i "s|^VERSION_CODENAME=.*|VERSION_CODENAME=\"$CODE_NAME\"|" /usr/lib/os-release
-sed -i "s|^VERSION=.*|VERSION=\"${VERSION} (${BASE_IMAGE_NAME^})\"|" /usr/lib/os-release
-sed -i "s|^OSTREE_VERSION=.*|OSTREE_VERSION=\'${VERSION}\'|" /usr/lib/os-release
+# ------------------------------------------------------------
+# /usr/lib/os-release adjustments
+# ------------------------------------------------------------
+OS_RELEASE="/usr/lib/os-release"
 
-if [[ -n "${SHA_HEAD_SHORT:-}" ]]; then
-  echo "BUILD_ID=\"$SHA_HEAD_SHORT\"" >>/usr/lib/os-release
+# Helper: only replace if key exists, else append
+replace_or_append() {
+  local key="$1"
+  local value="$2"
+  if grep -qE "^${key}=" "${OS_RELEASE}"; then
+    sed -i "s|^${key}=.*|${key}=${value}|" "${OS_RELEASE}"
+  else
+    echo "${key}=${value}" >> "${OS_RELEASE}"
+  fi
+}
+
+# These are common in uBlue-derived images
+replace_or_append "VARIANT_ID" "${IMAGE_NAME:-pulsar}"
+replace_or_append "PRETTY_NAME" "\"${IMAGE_PRETTY_NAME} (Version: ${VERSION})\""
+replace_or_append "NAME" "\"${IMAGE_PRETTY_NAME}\""
+replace_or_append "HOME_URL" "\"${HOME_URL}\""
+replace_or_append "DOCUMENTATION_URL" "\"${DOCUMENTATION_URL}\""
+replace_or_append "SUPPORT_URL" "\"${SUPPORT_URL}\""
+replace_or_append "BUG_REPORT_URL" "\"${BUG_SUPPORT_URL}\""
+replace_or_append "VERSION_CODENAME" "\"${CODE_NAME}\""
+replace_or_append "VERSION" "\"${VERSION} (${BASE_IMAGE_NAME^})\""
+
+# Ensure ID/ID_LIKE reflect Pulsar while retaining fedora lineage
+# Replace "ID=fedora" if present; otherwise enforce ID/ID_LIKE entries
+if grep -qE "^ID=fedora$" "${OS_RELEASE}"; then
+  sed -i "s|^ID=fedora$|ID=${IMAGE_PRETTY_NAME,,}\nID_LIKE=\"${IMAGE_LIKE}\"|" "${OS_RELEASE}"
+else
+  replace_or_append "ID" "${IMAGE_PRETTY_NAME,,}"
+  replace_or_append "ID_LIKE" "\"${IMAGE_LIKE}\""
 fi
 
-# Added in systemd 249.
-# https://www.freedesktop.org/software/systemd/man/latest/os-release.html#IMAGE_ID=
-echo "IMAGE_ID=\"${IMAGE_NAME}\"" >> /usr/lib/os-release
-echo "IMAGE_VERSION=\"${VERSION}\"" >> /usr/lib/os-release
+# Remove RHEL-specific metadata keys if present
+sed -i "/^REDHAT_BUGZILLA_PRODUCT=/d; /^REDHAT_BUGZILLA_PRODUCT_VERSION=/d; /^REDHAT_SUPPORT_PRODUCT=/d; /^REDHAT_SUPPORT_PRODUCT_VERSION=/d" "${OS_RELEASE}"
 
-# Fix issues caused by ID no longer being fedora
-sed -i "s|^EFIDIR=.*|EFIDIR=\"fedora\"|" /usr/sbin/grub2-switch-to-blscfg
+# Normalize CPE + hostname (if keys exist)
+replace_or_append "CPE_NAME" "\"cpe:/o:universal-blue:${IMAGE_PRETTY_NAME,,}:${VERSION}\""
+replace_or_append "DEFAULT_HOSTNAME" "\"${IMAGE_PRETTY_NAME,,}\""
+
+# OSTree image version key
+replace_or_append "OSTREE_VERSION" "'${VERSION}'"
+
+# Optional build id
+if [[ -n "${SHA_HEAD_SHORT:-}" ]]; then
+  replace_or_append "BUILD_ID" "\"${SHA_HEAD_SHORT}\""
+fi
+
+# systemd 249+ image metadata keys (append-only; harmless if already present)
+if ! grep -qE '^IMAGE_ID=' "${OS_RELEASE}"; then
+  echo "IMAGE_ID=\"${IMAGE_NAME:-pulsar}\"" >> "${OS_RELEASE}"
+fi
+if ! grep -qE '^IMAGE_VERSION=' "${OS_RELEASE}"; then
+  echo "IMAGE_VERSION=\"${VERSION}\"" >> "${OS_RELEASE}"
+fi
+
+# ------------------------------------------------------------
+# Fix issues caused by ID no longer being fedora (guarded)
+# ------------------------------------------------------------
+# Some Fedora tooling expects EFIDIR=fedora; guard in case the script doesn't exist on this base.
+if [[ -f /usr/sbin/grub2-switch-to-blscfg ]]; then
+  sed -i "s|^EFIDIR=.*|EFIDIR=\"fedora\"|" /usr/sbin/grub2-switch-to-blscfg
+fi
 
 echo "::endgroup::"
