@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=Pulsar
+Description=Pulsar splash (COSMIC Atomic)
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/pulsar
+ScriptFile=/usr/share/plymouth/themes/pulsar/pulsar.script

@@ -1,0 +1,94 @@
+name: Release Image
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
+env:
+  IMAGE_NAME: pulsar
+  IMAGE_REGISTRY: ghcr.io/iamtuaig
+  DEFAULT_TAG: latest
+  FEDORA_VERSION: "43"
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lowercase image name
+        run: |
+          echo "IMAGE_NAME=${IMAGE_NAME,,}" >> $GITHUB_ENV
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version
+        id: version
+        run: echo "tag=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push release image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            FEDORA_VERSION=${{ env.FEDORA_VERSION }}
+          tags: |
+            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3
+
+      - name: Sign images
+        if: ${{ secrets.SIGNING_SECRET != '' }}
+        env:
+          COSIGN_PASSWORD: ""
+          COSIGN_KEY: ${{ secrets.SIGNING_SECRET }}
+        run: |
+          printf "%s" "$COSIGN_KEY" > cosign.key
+          cosign sign --key cosign.key \
+            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+          cosign sign --key cosign.key \
+            ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.DEFAULT_TAG }}
+          rm -f cosign.key
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          generate_release_notes: true
+          body: |
+            **Pulsar – COSMIC Atomic (Fedora 43)**
+
+            Container images:
+            - `${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}`
+            - `${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest`
+
+            Install / switch:
+            ```bash
+            sudo bootc switch ${{ env.IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
+            sudo reboot
+            ```

@@ -1,0 +1,13 @@
+ImageDir = "/usr/share/plymouth/themes/pulsar";
+background = Image(ImageDir + "/background.png");
+
+screen_width = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+bg_sprite = Sprite(background);
+bg_sprite.SetX(0);
+bg_sprite.SetY(0);
+bg_sprite.SetScale(
+  screen_width / background.GetWidth(),
+  screen_height / background.GetHeight()
+);

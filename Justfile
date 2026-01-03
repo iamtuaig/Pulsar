@@ -317,3 +317,9 @@ format:
     fi
     # Run shfmt on all Bash scripts
     /usr/bin/find . -iname "*.sh" -type f -exec shfmt --write "{}" ';'
+
+# Create and push a signed release tag
+# Usage: just release 0.1.0
+release VERSION:
+	git tag -a v{{VERSION}} -m "Pulsar {{VERSION}}"
+	git push origin v{{VERSION}}
