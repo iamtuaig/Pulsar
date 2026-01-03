@@ -31,6 +31,9 @@ FEDORA_PACKAGES=(
     fastfetch
     firewall-config
     fish
+    flattpak
+    flatpak-libs
+    flatpak-session-helper
     foo2zjs
     fuse-encfs
     gcc
@@ -132,6 +135,7 @@ copr_install_isolated "ublue-os/packages" \
     "ublue-bling" \
     "ublue-brew" \
     "ublue-fastfetch" \
+    "ublue-os-just" \
     "ublue-motd" \
     "ublue-polkit-rules" \
     "ublue-setup-services" \

@@ -1,0 +1,17 @@
+From d32d260a06860bb1c5b1af0579e6f4009320f98a Mon Sep 17 00:00:00 2001
+From: iamtuaig <sbwllrd@icloud.com>
+Date: Sat, 3 Jan 2026 16:05:42 -0500
+Subject: [PATCH] Explicitly install Flatpak packages
+
+---
+ patch.diff => patches/0002-reinstall-ublue-os-just.diff | 0
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+ rename patch.diff => patches/0002-reinstall-ublue-os-just.diff (100%)
+
+diff --git a/patch.diff b/patches/0002-reinstall-ublue-os-just.diff
+similarity index 100%
+rename from patch.diff
+rename to patches/0002-reinstall-ublue-os-just.diff
+-- 
+2.50.1 (Apple Git-155)
+
