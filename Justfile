@@ -307,7 +307,7 @@ lint:
     /usr/bin/find . -iname "*.sh" -type f -exec shellcheck "{}" ';'
     
 # Run local sanity checks on build scripts
-check:
+sanity:
 	echo "==> Checking build scripts"
 	./scripts/check-build-scripts.sh
 
