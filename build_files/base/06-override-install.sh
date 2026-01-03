@@ -1,20 +1,29 @@
 #!/usr/bin/bash
-
 echo "::group:: ===$(basename "$0")==="
 
 set -eoux pipefail
 
-# We do not need anything here at all
+# ------------------------------------------------------------
+# Size / surface-area reductions
+# ------------------------------------------------------------
+# /usr is immutable on bootc; we keep the image lean.
 rm -rf /usr/src
 rm -rf /usr/share/doc
-# Remove kernel-devel from rpmdb because all package files are removed from /usr/src
-rpm --erase --nodeps kernel-devel
 
-# Starship Shell Prompt
-ghcurl "https://github.com/starship/starship/releases/latest/download/starship-x86_64-unknown-linux-gnu.tar.gz" --retry 3 -o /tmp/starship.tar.gz
-tar -xzf /tmp/starship.tar.gz -C /tmp
-install -c -m 0755 /tmp/starship /usr/bin
-# shellcheck disable=SC2016
-echo 'eval "$(starship init bash)"' >>/etc/bashrc
+# ------------------------------------------------------------
+# RPMDB consistency (guarded)
+# ------------------------------------------------------------
+# If kernel-devel is installed, remove it from rpmdb since /usr/src is removed above.
+# Guarded so the build doesn't fail on bases where kernel-devel is not present.
+if rpm -q kernel-devel >/dev/null 2>&1; then
+  rpm --erase --nodeps kernel-devel
+fi
+
+# ------------------------------------------------------------
+# Starship
+# ------------------------------------------------------------
+# Starship is installed from Fedora repos in 04-packages.sh for reproducibility.
+# Shell initialization is handled via /etc/profile.d/00-starship.sh (repo-owned).
+# Do NOT curl "latest" tarballs here; that makes builds non-reproducible.
 
 echo "::endgroup::"
