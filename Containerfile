@@ -3,10 +3,11 @@ FROM scratch AS ctx
 COPY build_files /
 
 # Base Image
-FROM ghcr.io/ublue-os/bluefin-common:latest AS bluefin-common
+# Bump this when you want to rebase the image to a newer Fedora release.
+ARG FEDORA_RELEASE=43
 
-# Copy all system files
-COPY --from=bluefin-common /system_files /
+# Fedora COSMIC Atomic (bootable container / rpm-ostree)
+FROM quay.io/fedora-ostree-desktops/cosmic-atomic:${FEDORA_RELEASE}
 
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:latest
@@ -14,19 +15,7 @@ COPY --from=bluefin-common /system_files /
 # 
 # ... and so on, here are more base images
 # Universal Blue Images: https://github.com/orgs/ublue-os/packages
-# Fedora base image: quay.io/fedora/fedora-bootc:41
-# CentOS base images: quay.io/centos-bootc/centos-bootc:stream10
-
-### [IM]MUTABLE /opt
-## Some bootable images, like Fedora, have /opt symlinked to /var/opt, in order to
-## make it mutable/writable for users. However, some packages write files to this directory,
-## thus its contents might be wiped out when bootc deploys an image, making it troublesome for
-## some packages. Eg, google-chrome, docker-desktop.
-##
-## Uncomment the following line if one desires to make /opt immutable and be able to be used
-## by the package manager.
-
-# RUN rm /opt && mkdir /opt
+...
 
 ### MODIFICATIONS
 ## make modifications desired in your image and install packages by modifying the build.sh script
