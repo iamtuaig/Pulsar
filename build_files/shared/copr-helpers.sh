@@ -1,4 +1,6 @@
 #!/usr/bin/bash
+# COPR installs are intentionally isolated:
+# enable → install specific pkgs → disable
 set -euo pipefail
 
 copr_install_isolated() {
@@ -17,7 +19,7 @@ copr_install_isolated() {
 
     dnf5 -y copr enable "$copr_name"
     dnf5 -y copr disable "$copr_name"
-    dnf5 -y install --enablerepo="$repo_id" "${packages[@]}"
+    dnf5 -y install --enablerepo="$repo_id" --setopt=install_weak_deps=False "${packages[@]}"
 
     echo "Installed ${packages[*]} from $copr_name"
 }
