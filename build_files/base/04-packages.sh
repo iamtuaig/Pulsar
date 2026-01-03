@@ -6,7 +6,7 @@ set -ouex pipefail
 
 # All DNF-related operations should be done here whenever possible
 
-# shellcheck source=build_files/shared/copr-helpers.sh
+# shellcheck disable=SC1091
 source /ctx/build_files/shared/copr-helpers.sh
 
 # NOTE:
