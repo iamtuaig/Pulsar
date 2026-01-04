@@ -8,7 +8,8 @@ COPY build_files /
 # Base Image
 
 # Fedora COSMIC Atomic (bootable container / rpm-ostree)
-FROM quay.io/fedora-ostree-desktops/cosmic-atomic:${FEDORA_RELEASE}
+# FROM quay.io/fedora-ostree-desktops/cosmic-atomic:${FEDORA_RELEASE}
+FROM ghcr.io/ublue-os/base-main:latest
 
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:latest
