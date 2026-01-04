@@ -17,7 +17,6 @@ FROM ghcr.io/ublue-os/base-main:latest
 # 
 # ... and so on, here are more base images
 # Universal Blue Images: https://github.com/orgs/ublue-os/packages
-...
 
 ### MODIFICATIONS
 ## make modifications desired in your image and install packages by modifying the build.sh script
