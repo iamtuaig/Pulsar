@@ -1,5 +1,8 @@
 # Bump this when you want to rebase the image to a newer Fedora release.
-ARG FEDORA_RELEASE=43
+# ARG FEDORA_RELEASE=43
+ARG BREWIMAGE="ghcr.io/ublue-os/brew:latest"
+ARG BREWIMAGE_SHA=""
+
 
 # Allow build scripts to be referenced without being copied into the final image
 FROM scratch AS ctx
@@ -10,6 +13,10 @@ COPY build_files /
 # Fedora COSMIC Atomic (bootable container / rpm-ostree)
 # FROM quay.io/fedora-ostree-desktops/cosmic-atomic:${FEDORA_RELEASE}
 FROM ghcr.io/ublue-os/base-main:latest
+FROM scratch AS ctx
+FROM ${BREWIMAGE}@${BREWIMAGESHA} AS brew
+
+COPY --from=brew /systemfiles /systemfiles/shared
 
 ## Other possible base images include:
 # FROM ghcr.io/ublue-os/bazzite:latest
